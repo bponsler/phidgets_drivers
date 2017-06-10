@@ -32,11 +32,11 @@ externalproject_add(EP_${PROJECT_NAME}
   
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
   ${PROJECT_BINARY_DIR}/${PROJECT_NAME}-src/phidget21.h
-  ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}  # copy libs, set-up soname chain
+  ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}/phidget21.h  # copy libs, set-up soname chain
   
   COMMAND ${CMAKE_COMMAND} -E copy_if_different
   ${PROJECT_BINARY_DIR}/${PROJECT_NAME}-src/.libs/libphidget21.so.0.0.0
-  ${CMAKE_INSTALL_PREFIX}/lib
+  ${CMAKE_INSTALL_PREFIX}/lib/libphidget21.so.0.0.0
   COMMAND ${CMAKE_COMMAND} -E create_symlink libphidget21.so.0
   ${CMAKE_INSTALL_PREFIX}/lib/libphidget21.so
   COMMAND ${CMAKE_COMMAND} -E create_symlink libphidget21.so.0.0.0
