@@ -2,10 +2,10 @@
 
 int main(int argc, char **argv)
 {
-  ros::init (argc, argv, "PhidgetsImu");
-  ros::NodeHandle nh;
-  ros::NodeHandle nh_private("~");
+  rclcpp::init(argc, argv);
+  rclcpp::node::Node::SharedPtr nh = rclcpp::node::Node::make_shared("PhidgetsImu");
+  rclcpp::node::Node::SharedPtr nh_private = rclcpp::node::Node::make_shared("~");
   phidgets::ImuRosI imu(nh, nh_private);
-  ros::spin();
+  rclcpp::spin(nh);
   return 0;
 }

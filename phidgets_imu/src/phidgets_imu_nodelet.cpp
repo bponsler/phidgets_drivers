@@ -2,15 +2,19 @@
 
 typedef phidgets::PhidgetsImuNodelet PhidgetsImuNodelet;
 
-PLUGINLIB_DECLARE_CLASS (phidgets_imu, PhidgetsImuNodelet, PhidgetsImuNodelet, nodelet::Nodelet);
-
-void PhidgetsImuNodelet::onInit()
+PhidgetsImuNodelet::PhidgetsImuNodelet()
+  :
+  rclcpp::node::Node("phidgets_imu_node")
 {
-  NODELET_INFO("Initializing Phidgets IMU Nodelet");
+  //NODELET_INFO("Initializing Phidgets IMU Nodelet");
+  std::cerr << "Initializing Phidgets IMU Nodelet" << std::endl;
   
   // TODO: Do we want the single threaded or multithreaded NH?
-  ros::NodeHandle nh         = getMTNodeHandle();
-  ros::NodeHandle nh_private = getMTPrivateNodeHandle();
+  rclcpp::node::Node::SharedPtr nh_private = rclcpp::node::Node::make_shared("~");
 
-  imu_ = new ImuRosI(nh, nh_private);
+  imu_ = new ImuRosI(rclcpp::node::Node::SharedPtr(this), nh_private);
 }
+
+#include "class_loader/class_loader_register_macro.h"
+
+CLASS_LOADER_REGISTER_CLASS(PhidgetsImuNodelet, rclcpp::Node);

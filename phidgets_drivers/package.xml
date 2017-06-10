@@ -1,5 +1,5 @@
-<?xml version="1.0"?>
-<package>
+<?xml version='1.0' encoding='utf-8'?>
+<package format="2">
   <name>phidgets_drivers</name>
   <version>0.7.2</version>
   <description>API and ROS drivers for Phidgets devices</description>
@@ -19,12 +19,13 @@
   <author>Martin Guenther</author>
   <author>Murilo FM</author>
 
-  <buildtool_depend>catkin</buildtool_depend>
-  <run_depend>phidgets_api</run_depend>
-  <run_depend>phidgets_imu</run_depend>
-  <run_depend>libphidget21</run_depend>
+  <buildtool_depend>ament</buildtool_depend>
+  <exec_depend>phidgets_api</exec_depend>
+  <exec_depend>phidgets_imu</exec_depend>
+  <exec_depend>libphidget21</exec_depend>
 
   <export>
     <metapackage />
+    <build_type>ament_cmake</build_type>
   </export>
 </package>

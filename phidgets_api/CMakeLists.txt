@@ -2,38 +2,47 @@ cmake_minimum_required(VERSION 2.8.3)
 
 project(phidgets_api)
 
-find_package(catkin REQUIRED COMPONENTS libphidget21)
+# Add support for C++11
+if(NOT WIN32)
+  add_definitions(-std=c++11)
+endif()
 
-catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES phidgets_api
-  CATKIN_DEPENDS libphidget21
-#  DEPENDS
-)
+find_package(ament_cmake REQUIRED)
+find_package(libphidget21 REQUIRED)
 
-include_directories(include ${catkin_INCLUDE_DIRS})
+set(INCLUDE_DIRS include ${ament_cmake_INCLUDE_DIRS}
+  ${libphidget21_INCLUDE_DIRS})
+include_directories(${INCLUDE_DIRS})
 
-add_library(phidgets_api src/encoder.cpp
-                         src/imu.cpp
-                         src/ir.cpp
-                         src/motor.cpp
-                         src/phidget.cpp)
+set(LIBRARY_DIRS ${ament_cmake_LIBRARY_DIRS} ${libphidget21_LIBRARY_DIRS})
 
-add_dependencies(phidgets_api ${catkin_EXPORTED_TARGETS})
+link_directories(${LIBRARY_DIRS})
 
-target_link_libraries(phidgets_api ${catkin_LIBRARIES})
+set(LIBS ${ament_cmake_LIBRARIES} ${libphidget21_LIBRARIES})
+
+add_library(phidgets_api src/encoder.cpp src/imu.cpp src/ir.cpp src/motor.cpp
+  src/phidget.cpp)
+
+target_link_libraries(phidgets_api ${LIBS})
 
 install(TARGETS phidgets_api
-   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-)
+  ARCHIVE
+  DESTINATION lib
+  LIBRARY
+  DESTINATION lib
+  RUNTIME
+  DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY include/${PROJECT_NAME}/
-   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-   FILES_MATCHING PATTERN "*.h"
-)
+  DESTINATION include/${PROJECT_NAME}
+  FILES_MATCHING
+  PATTERN "*.h")
 
-install(DIRECTORY share/
-   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
-)
+install(DIRECTORY share/ DESTINATION share/${PROJECT_NAME})
+
+ament_export_dependencies(ament_cmake)
+ament_export_dependencies(libphidget21)
+ament_export_include_directories(${INCLUDE_DIRS})
+ament_export_libraries(phidgets_api)
+
+ament_package()

@@ -1,4 +1,4 @@
-<?xml version="1.0"?>
+<?xml version='1.0' encoding='utf-8'?>
 <package format="2">
   <name>libphidget21</name>
   <version>0.7.2</version>
@@ -15,7 +15,11 @@
 
   <author>Alexander Bubeck</author>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <buildtool_depend>ament</buildtool_depend>
 
   <depend>libusb-dev</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
 </package>

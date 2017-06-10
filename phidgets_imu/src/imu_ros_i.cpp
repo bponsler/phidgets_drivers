@@ -3,7 +3,7 @@
 
 namespace phidgets {
 
-ImuRosI::ImuRosI(ros::NodeHandle nh, ros::NodeHandle nh_private):
+ImuRosI::ImuRosI(rclcpp::node::Node::SharedPtr nh, rclcpp::node::Node::SharedPtr nh_private):
   Imu(),
   nh_(nh),
   nh_private_(nh_private),
@@ -13,45 +13,59 @@ ImuRosI::ImuRosI(ros::NodeHandle nh, ros::NodeHandle nh_private):
   target_publish_freq_(0.0),
   initialized_(false)
 {
-  ROS_INFO ("Starting Phidgets IMU");
+  //ROS_INFO ("Starting Phidgets IMU");
+  std::cerr << "Starting Phidgets IMU" << std::endl;
 
   // **** get parameters
 
-  if (!nh_private_.getParam ("period", period_))
-    period_ = 8; // 8 ms
-  if (!nh_private_.getParam ("frame_id", frame_id_))
-    frame_id_ = "imu";
-  if (!nh_private_.getParam ("angular_velocity_stdev", angular_velocity_stdev_))
-    angular_velocity_stdev_ = 0.02 * (M_PI / 180.0); // 0.02 deg/s resolution, as per manual
-  if (!nh_private_.getParam ("linear_acceleration_stdev", linear_acceleration_stdev_))
-    linear_acceleration_stdev_ = 300.0 * 1e-6 * G; // 300 ug as per manual
-  if (!nh_private_.getParam ("magnetic_field_stdev", magnetic_field_stdev_))
-    magnetic_field_stdev_ = 0.095 * (M_PI / 180.0); // 0.095°/s as per manual
-  if (nh_private_.getParam ("serial_number", serial_number_)) // optional param serial_number, default is -1
-    ROS_INFO_STREAM("Searching for device with serial number: " << serial_number_);
+  rclcpp::parameter_client::SyncParametersClient client(nh_private_);
+  period_ = client.get_parameter ("period", 8);  // 8 ms
+  frame_id_ = client.get_parameter ("frame_id", std::string("imu"));
+  angular_velocity_stdev_ = client.get_parameter ("angular_velocity_stdev", 0.02 * (M_PI / 180.0)); // 0.02 deg/s resolution, as per manual
+  linear_acceleration_stdev_ = client.get_parameter ("linear_acceleration_stdev", 300.0 * 1e-6 * G); // 300 ug as per manual
+  magnetic_field_stdev_ = client.get_parameter ("magnetic_field_stdev", 0.095 * (M_PI / 180.0)); // 0.095°/s as per manual
+  if (client.has_parameter("serial_number")) { // optional param serial_number, default is -1
+    serial_number_ = client.get_parameter ("serial_number", -1);
+    //ROS_INFO_STREAM("Searching for device with serial number: " << serial_number_);
+    std::cerr << "Searching for device with serial number: " << serial_number_ << std::endl;
+  }
 
   bool has_compass_params =
-      nh_private_.getParam ("cc_mag_field", cc_mag_field_)
-      && nh_private_.getParam ("cc_offset0", cc_offset0_)
-      && nh_private_.getParam ("cc_offset1", cc_offset1_)
-      && nh_private_.getParam ("cc_offset2", cc_offset2_)
-      && nh_private_.getParam ("cc_gain0", cc_gain0_)
-      && nh_private_.getParam ("cc_gain1", cc_gain1_)
-      && nh_private_.getParam ("cc_gain2", cc_gain2_)
-      && nh_private_.getParam ("cc_t0", cc_T0_)
-      && nh_private_.getParam ("cc_t1", cc_T1_)
-      && nh_private_.getParam ("cc_t2", cc_T2_)
-      && nh_private_.getParam ("cc_t3", cc_T3_)
-      && nh_private_.getParam ("cc_t4", cc_T4_)
-      && nh_private_.getParam ("cc_t5", cc_T5_);
+      client.has_parameter ("cc_mag_field")
+      && client.has_parameter ("cc_offset0")
+      && client.has_parameter ("cc_offset1")
+      && client.has_parameter ("cc_offset2")
+      && client.has_parameter ("cc_gain0")
+      && client.has_parameter ("cc_gain1")
+      && client.has_parameter ("cc_gain2")
+      && client.has_parameter ("cc_t0")
+      && client.has_parameter ("cc_t1")
+      && client.has_parameter ("cc_t2")
+      && client.has_parameter ("cc_t3")
+      && client.has_parameter ("cc_t4")
+      && client.has_parameter ("cc_t5");
+
+  cc_mag_field_ = client.get_parameter ("cc_mag_field", cc_mag_field_);
+  cc_offset0_ = client.get_parameter ("cc_offset0", cc_offset0_);
+  cc_offset1_ = client.get_parameter ("cc_offset1", cc_offset1_);
+  cc_offset2_ = client.get_parameter ("cc_offset2", cc_offset2_);
+  cc_gain0_ = client.get_parameter ("cc_gain0", cc_gain0_);
+  cc_gain1_ = client.get_parameter ("cc_gain1", cc_gain1_);
+  cc_gain2_ = client.get_parameter ("cc_gain2", cc_gain2_);
+  cc_T0_ = client.get_parameter ("cc_t0", cc_T0_);
+  cc_T1_ = client.get_parameter ("cc_t1", cc_T1_);
+  cc_T2_ = client.get_parameter ("cc_t2", cc_T2_);
+  cc_T3_ = client.get_parameter ("cc_t3", cc_T3_);
+  cc_T4_ = client.get_parameter ("cc_t4", cc_T4_);
+  cc_T5_ = client.get_parameter ("cc_t5", cc_T5_);
 
   // **** advertise topics
 
-  imu_publisher_ = nh_.advertise<ImuMsg>(
+  imu_publisher_ = nh_->create_publisher<ImuMsg>(
     "imu/data_raw", 5);
-  mag_publisher_ = nh_.advertise<MagMsg>(
+  mag_publisher_ = nh_->create_publisher<MagMsg>(
     "imu/mag", 5);
-  cal_publisher_ = nh_.advertise<std_msgs::Bool>(
+  cal_publisher_ = nh_->create_publisher<std_msgs::msg::Bool>(
     "imu/is_calibrated", 5);
 
   // Set up the topic publisher diagnostics monitor for imu/data_raw
@@ -70,8 +84,9 @@ ImuRosI::ImuRosI(ros::NodeHandle nh, ros::NodeHandle nh_private):
 
   // **** advertise services
 
-  cal_srv_ = nh_.advertiseService(
-    "imu/calibrate", &ImuRosI::calibrateService, this);
+  cal_srv_ = nh_->create_service<std_srvs::srv::Empty>(
+      "imu/calibrate",
+      std::bind(&ImuRosI::calibrateService, this, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3));
 
   // **** initialize variables and device
 
@@ -139,22 +154,25 @@ ImuRosI::ImuRosI(ros::NodeHandle nh, ros::NodeHandle nh_private):
     {
       const char *err;
       CPhidget_getErrorDescription(result, &err);
-      ROS_ERROR("Problem while trying to set compass correction params: '%s'.", err);
+      std::cerr << "Problem while trying to set compass correction params: '" << err << "'." << std::endl;
     }
   }
   else
   {
-    ROS_INFO("No compass correction params found.");
+    //ROS_INFO("No compass correction params found.");
+    std::cerr << "No compass correction params found." << std::endl;
   }
 }
 
 void ImuRosI::initDevice()
 {
-	ROS_INFO_STREAM("Opening device");
+        //ROS_INFO_STREAM("Opening device");
+        std::cerr << "Opening device" << std::endl;
 
 	open(serial_number_); // optional param serial_number, default is -1
 
-	ROS_INFO("Waiting for IMU to be attached...");
+	//ROS_INFO("Waiting for IMU to be attached...");
+	std::cerr << "Waiting for IMU to be attached..." << std::endl;
 	int result = waitForAttachment(10000);
 	if(result)
 	{
@@ -163,7 +181,8 @@ void ImuRosI::initDevice()
 		diag_updater_.force_update();
 		const char *err;
 		CPhidget_getErrorDescription(result, &err);
-		ROS_FATAL("Problem waiting for IMU attachment: %s Make sure the USB cable is connected and you have executed the phidgets_api/share/setup-udev.sh script.", err);
+		//ROS_FATAL("Problem waiting for IMU attachment: %s Make sure the USB cable is connected and you have executed the phidgets_api/share/setup-udev.sh script.", err);
+		std::cerr << "Problem waiting for IMU attachment: " << err << " Make sure the USB cable is connected and you have executed the phidgets_api/share/setup-udev.sh script." << std::endl;
 	}
 
   // calibrate on startup
@@ -175,8 +194,9 @@ void ImuRosI::initDevice()
                                getDeviceSerialNumber());
 }
 
-bool ImuRosI::calibrateService(std_srvs::Empty::Request  &req,
-                               std_srvs::Empty::Response &res)
+bool ImuRosI::calibrateService(const std::shared_ptr<rmw_request_id_t> request_header,
+			       const std::shared_ptr<std_srvs::srv::Empty::Request> req,
+			       const std::shared_ptr<std_srvs::srv::Empty::Response> res)
 {
   calibrate();
   return true;
@@ -184,31 +204,34 @@ bool ImuRosI::calibrateService(std_srvs::Empty::Request  &req,
 
 void ImuRosI::calibrate()
 {
-  ROS_INFO("Calibrating IMU...");
+  //ROS_INFO("Calibrating IMU...");
+  std::cerr << "Calibrating IMU..." << std::endl;
   zero();
-  ROS_INFO("Calibrating IMU done.");
+  //ROS_INFO("Calibrating IMU done.");
+  std::cerr << "Calibrating IMU done." << std::endl;
 
-  time_zero_ = ros::Time::now();
+  time_zero_ = ros2_time::Time::now();
 
   // publish message
-  std_msgs::Bool is_calibrated_msg;
+  std_msgs::msg::Bool is_calibrated_msg;
   is_calibrated_msg.data = true;
-  cal_publisher_.publish(is_calibrated_msg);
+  cal_publisher_->publish(is_calibrated_msg);
 }
 
 void ImuRosI::processImuData(CPhidgetSpatial_SpatialEventDataHandle* data, int i)
 {
   // **** calculate time from timestamp
-  ros::Duration time_imu(data[i]->timestamp.seconds +
-                         data[i]->timestamp.microseconds * 1e-6);
+  ros2_time::Duration time_imu(data[i]->timestamp.seconds +
+			       data[i]->timestamp.microseconds * 1e-6);
 
-  ros::Time time_now = time_zero_ + time_imu;
+  ros2_time::Time time_now = time_zero_ + time_imu;
 
-  double timediff = time_now.toSec() - ros::Time::now().toSec();
+  double timediff = time_now.toSec() - ros2_time::Time::now().toSec();
   if (fabs(timediff) > 0.1) {
-    ROS_WARN("IMU time lags behind by %f seconds, resetting IMU time offset!", timediff);
-    time_zero_ = ros::Time::now() - time_imu;
-    time_now = ros::Time::now();
+    //ROS_WARN("IMU time lags behind by %f seconds, resetting IMU time offset!", timediff);
+    std::cerr << "IMU time lags behind by " << timediff << " seconds, resetting IMU time offset!" << std::endl;
+    time_zero_ = ros2_time::Time::now() - time_imu;
+    time_now = ros2_time::Time::now();
   }
 
   // **** initialize if needed
@@ -221,10 +244,10 @@ void ImuRosI::processImuData(CPhidgetSpatial_SpatialEventDataHandle* data, int i
 
   // **** create and publish imu message
 
-  boost::shared_ptr<ImuMsg> imu_msg =
-    boost::make_shared<ImuMsg>(imu_msg_);
+  std::shared_ptr<ImuMsg> imu_msg =
+    std::make_shared<ImuMsg>(imu_msg_);
 
-  imu_msg->header.stamp = time_now;
+  imu_msg->header.stamp = time_now.toStamp();
 
   // set linear acceleration
   imu_msg->linear_acceleration.x = - data[i]->acceleration[0] * G;
@@ -236,15 +259,15 @@ void ImuRosI::processImuData(CPhidgetSpatial_SpatialEventDataHandle* data, int i
   imu_msg->angular_velocity.y = data[i]->angularRate[1] * (M_PI / 180.0);
   imu_msg->angular_velocity.z = data[i]->angularRate[2] * (M_PI / 180.0);
 
-  imu_publisher_.publish(imu_msg);
+  imu_publisher_->publish(imu_msg);
   imu_publisher_diag_ptr_->tick(time_now);
 
   // **** create and publish magnetic field message
 
-  boost::shared_ptr<MagMsg> mag_msg =
-    boost::make_shared<MagMsg>(mag_msg_);
+  std::shared_ptr<MagMsg> mag_msg =
+    std::make_shared<MagMsg>(mag_msg_);
 
-  mag_msg->header.stamp = time_now;
+  mag_msg->header.stamp = time_now.toStamp();
 
   if (data[i]->magneticField[0] != PUNK_DBL)
   {
@@ -262,7 +285,7 @@ void ImuRosI::processImuData(CPhidgetSpatial_SpatialEventDataHandle* data, int i
     mag_msg->magnetic_field.z = nan;
   }
 
-  mag_publisher_.publish(mag_msg);
+  mag_publisher_->publish(mag_msg);
 
   // diagnostics
   diag_updater_.update();
@@ -304,19 +327,19 @@ void ImuRosI::phidgetsDiagnostics(diagnostic_updater::DiagnosticStatusWrapper &s
 {
   if (is_connected_)
   {
-    stat.summary(diagnostic_msgs::DiagnosticStatus::OK, "The Phidget is connected.");
+    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::OK, "The Phidget is connected.");
     stat.add("Device Serial Number", getDeviceSerialNumber());
     stat.add("Device Name", getDeviceName());
     stat.add("Device Type", getDeviceType());
   }
   else
   {
-    stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "The Phidget is not connected. Check the USB.");
+    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "The Phidget is not connected. Check the USB.");
   }
 
   if (error_number_ != 0)
   {
-    stat.summary(diagnostic_msgs::DiagnosticStatus::ERROR, "The Phidget reports error.");
+    stat.summary(diagnostic_msgs::msg::DiagnosticStatus::ERROR, "The Phidget reports error.");
     stat.add("Error Number", error_number_);
     stat.add("Error message", getErrorDescription(error_number_));
   }

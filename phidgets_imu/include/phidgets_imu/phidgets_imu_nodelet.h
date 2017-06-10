@@ -1,16 +1,16 @@
 #ifndef PHIDGETS_IMU_PHIDGETS_IMU_NODELET_H
 #define PHIDGETS_IMU_PHIDGETS_IMU_NODELET_H
 
-#include <nodelet/nodelet.h>
-#include <pluginlib/class_list_macros.h>
+#include <rclcpp/node.hpp>
 
 #include "phidgets_imu/imu_ros_i.h"
 
 namespace phidgets {
 
-class PhidgetsImuNodelet : public nodelet::Nodelet
+class PhidgetsImuNodelet : public rclcpp::node::Node
 {
   public:
+    PhidgetsImuNodelet();
     virtual void onInit();
 
   private:

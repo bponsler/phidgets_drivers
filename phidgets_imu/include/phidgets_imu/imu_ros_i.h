@@ -1,15 +1,15 @@
 #ifndef PHIDGETS_IMU_IMU_ROS_I_H
 #define PHIDGETS_IMU_IMU_ROS_I_H
 
-#include <ros/ros.h>
-#include <ros/service_server.h>
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp/service.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/shared_ptr.hpp>
-#include <tf/transform_datatypes.h>
-#include <sensor_msgs/Imu.h>
-#include <sensor_msgs/MagneticField.h>
-#include <std_srvs/Empty.h>
-#include <std_msgs/Bool.h>
+#include <tf2/transform_datatypes.h>
+#include <sensor_msgs/msg/imu.hpp>
+#include <sensor_msgs/msg/magnetic_field.hpp>
+#include <std_srvs/srv/empty.hpp>
+#include <std_msgs/msg/bool.hpp>
 #include <diagnostic_updater/diagnostic_updater.h>
 #include <diagnostic_updater/publisher.h>
 #include <phidgets_api/imu.h>
@@ -22,24 +22,25 @@ const float G = 9.81;
 
 class ImuRosI : public Imu
 {
-  typedef sensor_msgs::Imu              ImuMsg;
-  typedef sensor_msgs::MagneticField    MagMsg;
+  typedef sensor_msgs::msg::Imu              ImuMsg;
+  typedef sensor_msgs::msg::MagneticField    MagMsg;
 
   public:
 
-    ImuRosI(ros::NodeHandle nh, ros::NodeHandle nh_private);
+    ImuRosI(rclcpp::node::Node::SharedPtr nh, rclcpp::node::Node::SharedPtr nh_private);
 
-    bool calibrateService(std_srvs::Empty::Request  &req,
-                          std_srvs::Empty::Response &res);
+    bool calibrateService(const std::shared_ptr<rmw_request_id_t> requestHeader,
+			  const std::shared_ptr<std_srvs::srv::Empty::Request> req,
+                          const std::shared_ptr<std_srvs::srv::Empty::Response> res);
 
   private:
 
-    ros::NodeHandle nh_;
-    ros::NodeHandle nh_private_;
-    ros::Publisher  imu_publisher_;
-    ros::Publisher  mag_publisher_;
-    ros::Publisher  cal_publisher_;
-    ros::ServiceServer cal_srv_;
+    rclcpp::node::Node::SharedPtr nh_;
+    rclcpp::node::Node::SharedPtr nh_private_;
+    rclcpp::publisher::Publisher<ImuMsg>::SharedPtr  imu_publisher_;
+    rclcpp::publisher::Publisher<MagMsg>::SharedPtr  mag_publisher_;
+    rclcpp::publisher::Publisher<std_msgs::msg::Bool>::SharedPtr  cal_publisher_;
+    rclcpp::service::Service<std_srvs::srv::Empty>::SharedPtr cal_srv_;
 
     /**@brief updater object of class Update. Used to add diagnostic tasks, set ID etc. refer package API.
      * Added for diagnostics */
@@ -53,13 +54,13 @@ class ImuRosI : public Imu
 
     bool initialized_;
     boost::mutex mutex_;
-    ros::Time last_imu_time_;
+    ros2_time::Time last_imu_time_;
     int serial_number_;
 
     ImuMsg imu_msg_;
     MagMsg mag_msg_;
 
-    ros::Time time_zero_;
+    ros2_time::Time time_zero_;
 
     // params
 
