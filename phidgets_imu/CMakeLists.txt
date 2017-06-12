@@ -77,6 +77,6 @@ ament_export_dependencies(std_srvs)
 ament_export_dependencies(tf2)
 ament_export_dependencies(ros2_time)
 ament_export_include_directories(${INCLUDE_DIRS})
-ament_export_libraries(phidgets_imu phidgets_imu_nodelet)
+ament_export_libraries(phidgets_imu phidgets_imu_nodelet ${LIBS})
 
 ament_package()

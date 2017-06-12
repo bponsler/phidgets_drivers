@@ -54,6 +54,6 @@ install(PROGRAMS
 
 ament_export_dependencies(ament_cmake)
 ament_export_include_directories(${INCLUDE_DIRS} ${CMAKE_INSTALL_PREFIX}/include)
-ament_export_libraries(phidget21)
+ament_export_libraries(phidget21 ${LIBS})
 
 ament_package()

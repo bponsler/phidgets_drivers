@@ -43,6 +43,6 @@ install(DIRECTORY share/ DESTINATION share/${PROJECT_NAME})
 ament_export_dependencies(ament_cmake)
 ament_export_dependencies(libphidget21)
 ament_export_include_directories(${INCLUDE_DIRS})
-ament_export_libraries(phidgets_api)
+ament_export_libraries(phidgets_api ${LIBS})
 
 ament_package()
