@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.5)
 project(libphidget21)
 
 # Add support for C++11
@@ -22,7 +22,7 @@ file(MAKE_DIRECTORY include/${PROJECT_NAME})
 include(ExternalProject)
 externalproject_add(EP_${PROJECT_NAME}
   URL
-  https://www.phidgets.com/downloads/libraries/libphidget_2.1.8.20151217.tar.gz
+  https://www.phidgets.com/downloads/phidget21/libraries/linux/libphidget/libphidget_2.1.8.20151217.tar.gz
   URL_MD5 818ab2ff1de92ed9568a206e0e89657f
   CONFIGURE_COMMAND "./configure"
   SOURCE_DIR ${PROJECT_BINARY_DIR}/${PROJECT_NAME}-src
