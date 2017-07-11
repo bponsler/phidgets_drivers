@@ -10,7 +10,8 @@ PhidgetsImuNodelet::PhidgetsImuNodelet()
   std::cerr << "Initializing Phidgets IMU Nodelet" << std::endl;
   
   // TODO: Do we want the single threaded or multithreaded NH?
-  rclcpp::node::Node::SharedPtr nh_private = rclcpp::node::Node::make_shared("~");
+  rclcpp::node::Node::SharedPtr nh_private =
+    rclcpp::node::Node::make_shared("phidgets_imu_nodelet");
 
   imu_ = new ImuRosI(rclcpp::node::Node::SharedPtr(this), nh_private);
 }
