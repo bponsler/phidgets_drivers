@@ -16,7 +16,7 @@
   <author>Tully Foote</author>
   <author>Ivan Dryanovski</author>
 
-  <buildtool_depend>ament</buildtool_depend>
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
   <build_depend>libusb-1.0-dev</build_depend>
   <build_depend>libphidget21</build_depend>
